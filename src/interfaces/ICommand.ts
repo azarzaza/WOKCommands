@@ -8,6 +8,7 @@ export default interface ICommand {
   maxArgs?: number;
   syntaxError?: { [key: string]: string };
   expectedArgs?: string;
+  alternativeArgs?: Object;
   description?: string;
   syntax?: string;
   requiredPermissions?: PermissionString[];
