@@ -24,7 +24,8 @@ module.exports = {
                     }
                 });
             }
-            catch (ignored) { }
+            catch (ignored) {
+            }
             slashCommands.delete(text, useGuild ? guild.id : undefined);
             if (useGuild) {
                 return `Slash command with the ID "${text}" has been deleted from guild "${guild.id}".`;
@@ -53,9 +54,13 @@ module.exports = {
         else {
             allSlashCommands.push('None');
         }
-        const embed = new discord_js_1.MessageEmbed().addField('How to delete a slash command:', `${instance.getPrefix(guild)}slash <command-id>`);
+        const embed = new discord_js_1.EmbedBuilder().addFields([
+            { name: 'How to delete a slash command:', value: `${instance.getPrefix(guild)}slash <command-id>` }
+        ]);
         for (let a = 0; a < allSlashCommands.length; ++a) {
-            embed.addField(`Global slash commands:${a === 0 ? '' : ' (Continued)'}`, allSlashCommands[a]);
+            embed.addFields([
+                { name: `Global slash commands:${a === 0 ? '' : ' (Continued)'}`, value: allSlashCommands[a] }
+            ]);
         }
         if (guild) {
             const guildOnly = await slashCommands.get(guild.id);
@@ -82,7 +87,9 @@ module.exports = {
                 guildOnlyCommands[0] = 'None';
             }
             for (let a = 0; a < guildOnlyCommands.length; ++a) {
-                embed.addField(`Guild slash commands:${a === 0 ? '' : ' (Continued)'}`, guildOnlyCommands[a]);
+                embed.addFields([
+                    { name: `Guild slash commands:${a === 0 ? '' : ' (Continued)'}`, value: guildOnlyCommands[a] }
+                ]);
             }
         }
         if (instance.color) {

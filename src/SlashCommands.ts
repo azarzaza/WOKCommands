@@ -1,11 +1,12 @@
 import {
-  ApplicationCommand,
-  ApplicationCommandOptionData,
-  Client,
-  CommandInteraction,
-  CommandInteractionOptionResolver,
-  GuildMember,
-  MessageEmbed,
+    ApplicationCommand, ApplicationCommandOption,
+    ApplicationCommandOptionData,
+    ApplicationCommandOptionType,
+    Client,
+    CommandInteraction,
+    CommandInteractionOptionResolver,
+    EmbedBuilder,
+    GuildMember,
 } from 'discord.js'
 import path from 'path'
 
@@ -13,282 +14,280 @@ import getAllFiles from './get-all-files'
 import WOKCommands from '.'
 
 class SlashCommands {
-  private _client: Client
-  private _instance: WOKCommands
-  private _commandChecks: Map<String, Function> = new Map()
+    private _client: Client
+    private _instance: WOKCommands
+    private _commandChecks: Map<String, Function> = new Map()
 
-  constructor(instance: WOKCommands, listen: boolean, typeScript?: boolean) {
-    this._instance = instance
-    this._client = instance.client
+    constructor(instance: WOKCommands, listen: boolean, typeScript?: boolean) {
+        this._instance = instance
+        this._client = instance.client
 
-    this.setUp(listen, typeScript)
-  }
-
-  private async setUp(listen: boolean, typeScript = false) {
-    // Do not pass in TS here because this should always compiled to JS
-    for (const [file, fileName] of getAllFiles(
-      path.join(__dirname, 'command-checks')
-    )) {
-      this._commandChecks.set(fileName, require(file))
+        this.setUp(listen, typeScript)
     }
 
-    const replyFromCheck = async (
-      reply: string | MessageEmbed | MessageEmbed[],
-      interaction: CommandInteraction
-    ) => {
-      if (!reply) {
-        return new Promise((resolve) => {
-          resolve('No reply provided.')
-        })
-      }
+    private async setUp(listen: boolean, typeScript = false) {
+        // Do not pass in TS here because this should always be compiled to JS
+        for (const [file, fileName] of getAllFiles(
+            path.join(__dirname, 'command-checks')
+        )) {
+            this._commandChecks.set(fileName, require(file))
+        }
 
-      if (typeof reply === 'string') {
-        return interaction.reply({
-          content: reply,
-          ephemeral: this._instance.ephemeral,
-        })
-      } else {
-        let embeds = []
+        const replyFromCheck = async (
+            reply: string | EmbedBuilder | EmbedBuilder[],
+            interaction: CommandInteraction
+        ) => {
+            if (!reply) {
+                return new Promise((resolve) => {
+                    resolve('No reply provided.')
+                })
+            }
 
-        if (Array.isArray(reply)) {
-          embeds = reply
+            if (typeof reply === 'string') {
+                return interaction.reply({
+                    content: reply,
+                    ephemeral: this._instance.ephemeral,
+                })
+            } else {
+                let embeds = []
+
+                if (Array.isArray(reply)) {
+                    embeds = reply
+                } else {
+                    embeds.push(reply)
+                }
+
+                return interaction.reply({
+                    embeds,
+                    ephemeral: this._instance.ephemeral,
+                })
+            }
+        }
+
+        if (listen) {
+            this._client.on('interactionCreate', async (interaction) => {
+                if (!interaction.isCommand()) {
+                    return
+                }
+
+                const {user, commandName, options, guild, channelId} = interaction
+                const member = interaction.member as GuildMember
+                const channel = guild?.channels.cache.get(channelId) || null
+                const command = this._instance.commandHandler.getCommand(commandName)
+
+                if (!command) {
+                    interaction.reply({
+                        content: this._instance.messageHandler.get(
+                            guild,
+                            'INVALID_SLASH_COMMAND'
+                        ),
+                        ephemeral: this._instance.ephemeral,
+                    })
+                    return
+                }
+
+                const args: string[] = []
+
+                options.data.forEach(({value}) => {
+                    args.push(String(value))
+                })
+
+                for (const [
+                    checkName,
+                    checkFunction,
+                ] of this._commandChecks.entries()) {
+                    if (
+                        !(await checkFunction({
+                            guild,
+                            command,
+                            instance: this._instance,
+                            member,
+                            user,
+                            reply: (reply: string | EmbedBuilder) => {
+                                return replyFromCheck(reply, interaction)
+                            },
+                            args,
+                            name: commandName,
+                            channel,
+                        }))
+                    ) {
+                        return
+                    }
+                }
+
+                this.invokeCommand(interaction, commandName, options, args)
+            })
+        }
+    }
+
+    public getCommands(guildId?: string) {
+        if (guildId) {
+            return this._client.guilds.cache.get(guildId)?.commands
+        }
+
+        return this._client.application?.commands
+    }
+
+    public async get(guildId?: string): Promise<Map<any, any>> {
+        const commands = this.getCommands(guildId)
+        if (commands) {
+            // @ts-ignore
+            await commands.fetch()
+            return commands.cache
+        }
+
+        return new Map()
+    }
+
+    private didOptionsChange(
+        command: ApplicationCommand,
+        options: (ApplicationCommandOptionData & { required?: boolean })[]
+    ): boolean {
+        return (
+            command.options?.filter((opt: ApplicationCommandOption & { nameLocalized?: string | undefined, descriptionLocalized?: string | undefined, required?: boolean, options?: any }, index) => {
+                return (
+                    opt?.required !== options[index]?.required &&
+                    opt?.name !== options[index]?.name &&
+                    opt?.options?.length !== options.length
+                )
+            }).length !== 0
+        )
+    }
+
+    public async create(
+        name: string,
+        description: string,
+        options: ApplicationCommandOptionData[],
+        guildId?: string
+    ): Promise<ApplicationCommand | undefined> {
+        let commands
+
+        if (guildId) {
+            commands = this._client.guilds.cache.get(guildId)?.commands
         } else {
-          embeds.push(reply)
+            commands = this._client.application?.commands
         }
 
-        return interaction.reply({
-          embeds,
-          ephemeral: this._instance.ephemeral,
-        })
-      }
+        if (!commands) {
+            return
+        }
+
+        // @ts-ignore
+        await commands.fetch()
+
+        const cmd = commands.cache.find(
+            (cmd) => cmd.name === name
+        ) as ApplicationCommand
+
+        if (cmd) {
+            const optionsChanged = this.didOptionsChange(cmd, options)
+
+            if (
+                cmd.description !== description ||
+                cmd.options.length !== options.length ||
+                optionsChanged
+            ) {
+                console.log(
+                    `WOKCommands > Updating${
+                        guildId ? ' guild' : ''
+                    } slash command "${name}"`
+                )
+
+                return commands?.edit(cmd.id, {
+                    name,
+                    description,
+                    options,
+                })
+            }
+
+            return Promise.resolve(cmd)
+        }
+
+        if (commands) {
+            console.log(
+                `WOKCommands > Creating${
+                    guildId ? ' guild' : ''
+                } slash command "${name}"`
+            )
+
+            return await commands.create({
+                name,
+                description,
+                options,
+            })
+        }
+
+        return Promise.resolve(undefined)
     }
 
-    if (listen) {
-      this._client.on('interactionCreate', async (interaction) => {
-        if (!interaction.isCommand()) {
-          return
+    public async delete(
+        commandId: string,
+        guildId?: string
+    ): Promise<ApplicationCommand<{}> | undefined> {
+        const commands = this.getCommands(guildId)
+        if (commands) {
+            const cmd = commands.cache.get(commandId)
+            if (cmd) {
+                console.log(
+                    `WOKCommands > Deleting${guildId ? ' guild' : ''} slash command "${
+                        cmd.name
+                    }"`
+                )
+
+                cmd.delete()
+            }
         }
 
-        const { user, commandName, options, guild, channelId } = interaction
-        const member = interaction.member as GuildMember
-        const channel = guild?.channels.cache.get(channelId) || null
+        return Promise.resolve(undefined)
+    }
+
+    public async invokeCommand(
+        interaction: CommandInteraction,
+        commandName: string,
+        options: Omit<CommandInteractionOptionResolver, "getMessage" | "getFocused"> | Omit<CommandInteractionOptionResolver, "getFocused" | "getMentionable" | "getRole" | "getNumber" | "getInteger" | "getString" | "getChannel" | "getBoolean" | "getSubcommandGroup" | "getSubcommand">,
+        args: string[]
+    ) {
         const command = this._instance.commandHandler.getCommand(commandName)
 
-        if (!command) {
-          interaction.reply({
-            content: this._instance.messageHandler.get(
-              guild,
-              'INVALID_SLASH_COMMAND'
-            ),
-            ephemeral: this._instance.ephemeral,
-          })
-          return
-        }
-
-        const args: string[] = []
-
-        options.data.forEach(({ value }) => {
-          args.push(String(value))
-        })
-
-        for (const [
-          checkName,
-          checkFunction,
-        ] of this._commandChecks.entries()) {
-          if (
-            !(await checkFunction({
-              guild,
-              command,
-              instance: this._instance,
-              member,
-              user,
-              reply: (reply: string | MessageEmbed) => {
-                return replyFromCheck(reply, interaction)
-              },
-              args,
-              name: commandName,
-              channel,
-            }))
-          ) {
+        if (!command || !command.callback) {
             return
-          }
         }
 
-        this.invokeCommand(interaction, commandName, options, args)
-      })
-    }
-  }
-
-  public getCommands(guildId?: string) {
-    if (guildId) {
-      return this._client.guilds.cache.get(guildId)?.commands
-    }
-
-    return this._client.application?.commands
-  }
-
-  public async get(guildId?: string): Promise<Map<any, any>> {
-    const commands = this.getCommands(guildId)
-    if (commands) {
-      // @ts-ignore
-      await commands.fetch()
-      return commands.cache
-    }
-
-    return new Map()
-  }
-
-  private didOptionsChange(
-    command: ApplicationCommand,
-    options: ApplicationCommandOptionData[]
-  ): boolean {
-    return (
-      command.options?.filter((opt, index) => {
-        return (
-          opt?.required !== options[index]?.required &&
-          opt?.name !== options[index]?.name &&
-          opt?.options?.length !== options.length
-        )
-      }).length !== 0
-    )
-  }
-
-  public async create(
-    name: string,
-    description: string,
-    options: ApplicationCommandOptionData[],
-    guildId?: string
-  ): Promise<ApplicationCommand<{}> | undefined> {
-    let commands
-
-    if (guildId) {
-      commands = this._client.guilds.cache.get(guildId)?.commands
-    } else {
-      commands = this._client.application?.commands
-    }
-
-    if (!commands) {
-      return
-    }
-
-    // @ts-ignore
-    await commands.fetch()
-
-    const cmd = commands.cache.find(
-      (cmd) => cmd.name === name
-    ) as ApplicationCommand
-
-    if (cmd) {
-      const optionsChanged = this.didOptionsChange(cmd, options)
-
-      if (
-        cmd.description !== description ||
-        cmd.options.length !== options.length ||
-        optionsChanged
-      ) {
-        console.log(
-          `WOKCommands > Updating${
-            guildId ? ' guild' : ''
-          } slash command "${name}"`
-        )
-
-        return commands?.edit(cmd.id, {
-          name,
-          description,
-          options,
+        const reply = await command.callback({
+            member: interaction.member,
+            guild: interaction.guild,
+            channel: interaction.channel,
+            args,
+            text: args.join(' '),
+            client: this._client,
+            instance: this._instance,
+            interaction,
+            options,
+            user: interaction.user,
         })
-      }
 
-      return Promise.resolve(cmd)
-    }
+        if (reply) {
+            if (typeof reply === 'string') {
+                interaction.reply({
+                    content: reply,
+                })
+            } else if (typeof reply === 'object') {
+                if (reply.custom) {
+                    interaction.reply(reply)
+                } else {
+                    let embeds = []
 
-    if (commands) {
-      console.log(
-        `WOKCommands > Creating${
-          guildId ? ' guild' : ''
-        } slash command "${name}"`
-      )
+                    if (Array.isArray(reply)) {
+                        embeds = reply
+                    } else {
+                        embeds.push(reply)
+                    }
 
-      const newCommand = await commands.create({
-        name,
-        description,
-        options,
-      })
-
-      return newCommand
-    }
-
-    return Promise.resolve(undefined)
-  }
-
-  public async delete(
-    commandId: string,
-    guildId?: string
-  ): Promise<ApplicationCommand<{}> | undefined> {
-    const commands = this.getCommands(guildId)
-    if (commands) {
-      const cmd = commands.cache.get(commandId)
-      if (cmd) {
-        console.log(
-          `WOKCommands > Deleting${guildId ? ' guild' : ''} slash command "${
-            cmd.name
-          }"`
-        )
-
-        cmd.delete()
-      }
-    }
-
-    return Promise.resolve(undefined)
-  }
-
-  public async invokeCommand(
-    interaction: CommandInteraction,
-    commandName: string,
-    options: CommandInteractionOptionResolver,
-    args: string[]
-  ) {
-    const command = this._instance.commandHandler.getCommand(commandName)
-
-    if (!command || !command.callback) {
-      return
-    }
-
-    const reply = await command.callback({
-      member: interaction.member,
-      guild: interaction.guild,
-      channel: interaction.channel,
-      args,
-      text: args.join(' '),
-      client: this._client,
-      instance: this._instance,
-      interaction,
-      options,
-      user: interaction.user,
-    })
-
-    if (reply) {
-      if (typeof reply === 'string') {
-        interaction.reply({
-          content: reply,
-        })
-      } else if (typeof reply === 'object') {
-        if (reply.custom) {
-          interaction.reply(reply)
-        } else {
-          let embeds = []
-
-          if (Array.isArray(reply)) {
-            embeds = reply
-          } else {
-            embeds.push(reply)
-          }
-
-          interaction.reply({ embeds })
+                    interaction.reply({embeds})
+                }
+            }
         }
-      }
     }
-  }
 }
 
 export = SlashCommands

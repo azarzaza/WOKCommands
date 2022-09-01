@@ -3,6 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 const channel_commands_1 = __importDefault(require("../models/channel-commands"));
+const discord_js_1 = require("discord.js");
 module.exports = {
     description: 'Makes a command only work in some channels.',
     category: 'Configuration',
@@ -17,13 +18,13 @@ module.exports = {
         {
             name: 'command',
             description: 'The command name',
-            type: 'STRING',
+            type: discord_js_1.ApplicationCommandOptionType.String,
             required: true,
         },
         {
             name: 'channel',
             description: 'The tag of the channel',
-            type: 'CHANNEL',
+            type: discord_js_1.ApplicationCommandOptionType.Channel,
             required: false,
         },
     ],
@@ -62,7 +63,7 @@ module.exports = {
             channels = Array.from(message.mentions.channels.keys());
         }
         else {
-            channels = [interaction.options.getChannel('channel')];
+            channels = [interaction.options?.get('channel')];
         }
         const results = await channel_commands_1.default.findOneAndUpdate({
             guildId: guild?.id,

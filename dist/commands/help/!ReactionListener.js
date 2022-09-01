@@ -4,12 +4,13 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.addReactions = void 0;
+const discord_js_1 = require("discord.js");
 const _get_first_embed_1 = __importDefault(require("./!get-first-embed"));
 const /**
-   * Recursively adds reactions to the message
-   * @param message The message to react to
-   * @param reactions A list of reactions to add
-   */ addReactions = (message, reactions) => {
+ * Recursively adds reactions to the message
+ * @param message The message to react to
+ * @param reactions A list of reactions to add
+ */ addReactions = (message, reactions) => {
     const emoji = reactions.shift();
     if (emoji) {
         message.react(emoji);
@@ -43,7 +44,7 @@ class ReactionHandler {
         if (this.user.bot || !embeds || embeds.length !== 1) {
             return;
         }
-        this.embed = embeds[0];
+        this.embed = discord_js_1.EmbedBuilder.from(embeds[0]);
         this.guild = guild;
         if (!this.canUserInteract()) {
             return;
@@ -56,8 +57,8 @@ class ReactionHandler {
      * @returns If the bot has access to remove reactions from the help menu
      */
     canBotRemoveReaction = () => {
-        return (this.message.channel.type !== 'DM' &&
-            this.message.member?.permissions.has('MANAGE_MESSAGES'));
+        return (this.message.channel.type !== discord_js_1.ChannelType.DM &&
+            this.message.member?.permissions.has(discord_js_1.PermissionsBitField.Flags.ManageMessages));
     };
     /**
      * @returns If the user is allowed to interact with this help menu
@@ -67,14 +68,14 @@ class ReactionHandler {
         const displayName = this.instance.displayName
             ? this.instance.displayName + ' '
             : '';
-        const isSameTitle = this.embed.title ===
+        const isSameTitle = this.embed.data.title ===
             `${displayName}${this.instance.messageHandler.getEmbed(this.guild, 'HELP_MENU', 'TITLE')}`;
         if (!isSameTitle) {
             return false;
         }
         // Check if the user's ID is in the footer
-        if (this.embed.footer) {
-            const { text } = this.embed.footer;
+        if (this.embed.data.footer) {
+            const { text } = this.embed.data.footer;
             const id = text?.split('#')[1];
             if (id !== this.user.id) {
                 if (this.canBotRemoveReaction()) {
@@ -89,8 +90,8 @@ class ReactionHandler {
      * Invoked when the user returns to the main menu
      */
     returnToMainMenu = () => {
-        const { embed: newEmbed, reactions } = _get_first_embed_1.default(this.message, this.instance);
-        this.embed.setDescription(newEmbed.description || '');
+        const { embed: newEmbed, reactions } = (0, _get_first_embed_1.default)(this.message, this.instance);
+        this.embed.setDescription(newEmbed.data.description || '');
         this.message.edit({ embeds: [this.embed] });
         if (this.canBotRemoveReaction()) {
             this.message.reactions.removeAll();
@@ -103,8 +104,8 @@ class ReactionHandler {
      */
     getMaxPages = (commandLength) => {
         let page = 1;
-        if (this.embed && this.embed.description) {
-            const split = this.embed.description.split('\n');
+        if (this.embed && this.embed.data.description) {
+            const split = this.embed.data.description.split('\n');
             const lastLine = split[split.length - 1];
             if (lastLine.startsWith('Page ')) {
                 page = parseInt(lastLine.split(' ')[1]);
@@ -118,8 +119,8 @@ class ReactionHandler {
     getCommands = () => {
         let category = this.instance.getCategory(this.emojiId || this.emojiName);
         const commandsString = this.instance.messageHandler.getEmbed(this.guild, 'HELP_MENU', 'COMMANDS');
-        if (this.embed.description) {
-            const split = this.embed.description.split('\n');
+        if (this.embed.data.description) {
+            const split = this.embed.data.description.split('\n');
             const cmdStr = ' ' + commandsString;
             if (split[0].endsWith(cmdStr)) {
                 category = split[0].replace(cmdStr, '');

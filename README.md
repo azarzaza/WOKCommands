@@ -4,7 +4,8 @@
 
 # WOKCommands
 
-WOKCommands is a Discord.JS command handler made by [Worn Off Keys](https://youtube.com/wornoffkeys). The goal of this package is to make it simple and easy to get your bot off the ground without worrying about your own command handler.
+WOKCommands is a Discord.JS command handler made by [Worn Off Keys](https://youtube.com/wornoffkeys). The goal of this
+package is to make it simple and easy to get your bot off the ground without worrying about your own command handler.
 
 # Documentation
 
@@ -26,4 +27,5 @@ npm install github:AlexzanderFlores/WOKCommands#dev
 
 # Support & Feature Requests
 
-This package is looking for feedback and ideas to help cover more use cases. If you have any ideas feel free to share them within the "💡 ｜ suggestions" channel in the [Worn Off Keys Discord server](http://wornoffkeys.com/discord).
+This package is looking for feedback and ideas to help cover more use cases. If you have any ideas feel free to share
+them within the "💡 ｜ suggestions" channel in the [Worn Off Keys Discord server](http://wornoffkeys.com/discord).

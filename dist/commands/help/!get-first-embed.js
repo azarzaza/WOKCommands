@@ -4,15 +4,15 @@ const discord_js_1 = require("discord.js");
 const getFirstEmbed = (message, instance) => {
     const { guild, member } = message;
     const { commandHandler: { commands }, messageHandler, } = instance;
-    const embed = new discord_js_1.MessageEmbed()
+    const embed = new discord_js_1.EmbedBuilder()
         .setTitle(`${instance.displayName} ${messageHandler.getEmbed(guild, 'HELP_MENU', 'TITLE')}`)
         .setDescription(messageHandler.getEmbed(guild, 'HELP_MENU', 'SELECT_A_CATEGORY'))
-        .setFooter(`ID #${message.author?.id}`);
+        .setFooter({ text: `ID #${message.author?.id}` });
     if (instance.color) {
         embed.setColor(instance.color);
     }
     const categories = {};
-    const isAdmin = member && member.permissions.has('ADMINISTRATOR');
+    const isAdmin = member && member.permissions.has(discord_js_1.PermissionsBitField.Flags.Administrator);
     for (const { category, testOnly } of commands) {
         if (!category ||
             (testOnly && guild && !instance.testServers.includes(guild.id)) ||
@@ -45,7 +45,7 @@ const getFirstEmbed = (message, instance) => {
         }
         const reaction = emoji;
         reactions.push(reaction);
-        embed.setDescription(embed.description +
+        embed.setDescription(embed.data.description +
             `\n\n**${reaction} - ${key}** - ${amount} command${amount === 1 ? '' : 's'}`);
     }
     return {

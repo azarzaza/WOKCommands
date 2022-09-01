@@ -65,8 +65,8 @@ class WOKCommands extends events_1.EventEmitter {
         }
         let { commandsDir = '', commandDir = '', featuresDir = '', featureDir = '', messagesPath, mongoUri, showWarns = true, delErrMsgCooldown = -1, defaultLanguage = 'english', ignoreBots = true, dbOptions, testServers, botOwners, disabledDefaultCommands = [], typeScript = false, ephemeral = true, debug = false, } = options || {};
         if (mongoUri) {
-            await mongo_1.default(mongoUri, this, dbOptions);
-            this._mongoConnection = mongo_1.getMongoConnection();
+            await (0, mongo_1.default)(mongoUri, this, dbOptions);
+            this._mongoConnection = (0, mongo_1.getMongoConnection)();
             const results = await prefixes_1.default.find({});
             for (const result of results) {
                 const { _id, prefix } = result;

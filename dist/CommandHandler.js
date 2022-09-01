@@ -48,21 +48,21 @@ class CommandHandler {
     }
     async setUp(instance, client, dir, disabledDefaultCommands, typeScript = false) {
         // Do not pass in TS here because this should always compiled to JS
-        for (const [file, fileName] of get_all_files_1.default(path_1.default.join(__dirname, 'commands'))) {
+        for (const [file, fileName] of (0, get_all_files_1.default)(path_1.default.join(__dirname, 'commands'))) {
             if (disabledDefaultCommands.includes(fileName)) {
                 continue;
             }
             await this.registerCommand(instance, client, file, fileName, true);
         }
         // Do not pass in TS here because this should always compiled to JS
-        for (const [file, fileName] of get_all_files_1.default(path_1.default.join(__dirname, 'command-checks'))) {
+        for (const [file, fileName] of (0, get_all_files_1.default)(path_1.default.join(__dirname, 'command-checks'))) {
             this._commandChecks.set(fileName, require(file));
         }
         if (dir) {
             if (!fs_1.default.existsSync(dir)) {
                 throw new Error(`Commands directory "${dir}" doesn't exist!`);
             }
-            const files = get_all_files_1.default(dir, typeScript ? '.ts' : '');
+            const files = (0, get_all_files_1.default)(dir, typeScript ? '.ts' : '');
             const amount = files.length;
             console.log(`WOKCommands > Loaded ${amount} command${amount === 1 ? '' : 's'}.`);
             for (const [file, fileName] of files) {

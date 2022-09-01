@@ -3,6 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 const disabled_commands_1 = __importDefault(require("../models/disabled-commands"));
+const discord_js_1 = require("discord.js");
 module.exports = {
     description: 'Enables or disables a command for this guild',
     category: 'Configuration',
@@ -17,7 +18,7 @@ module.exports = {
             name: 'action',
             description: 'Either "enable" or "disable"',
             required: true,
-            type: 'STRING',
+            type: discord_js_1.ApplicationCommandOptionType.String,
             choices: [
                 {
                     name: 'Enable',
@@ -30,7 +31,7 @@ module.exports = {
             name: 'command',
             description: 'The name of the command',
             required: true,
-            type: 'STRING',
+            type: discord_js_1.ApplicationCommandOptionType.String,
         },
     ],
     callback: async (options) => {

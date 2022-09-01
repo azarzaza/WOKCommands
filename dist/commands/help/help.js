@@ -26,13 +26,13 @@ const discord_js_1 = require("discord.js");
 const _get_first_embed_1 = __importDefault(require("./!get-first-embed"));
 const _ReactionListener_1 = __importStar(require("./!ReactionListener"));
 const sendHelpMenu = (message, instance) => {
-    const { embed, reactions } = _get_first_embed_1.default(message, instance);
+    const { embed, reactions } = (0, _get_first_embed_1.default)(message, instance);
     message.channel
         .send({
         embeds: [embed],
     })
         .then((message) => {
-        _ReactionListener_1.addReactions(message, reactions);
+        (0, _ReactionListener_1.addReactions)(message, reactions);
     });
 };
 module.exports = {
@@ -49,11 +49,11 @@ module.exports = {
     callback: (options) => {
         const { message, channel, instance, args } = options;
         const { guild } = channel;
-        if (guild && !guild.me?.permissions.has('SEND_MESSAGES')) {
+        if (guild && !guild.members.me?.permissions.has(discord_js_1.PermissionsBitField.Flags.SendMessages)) {
             console.warn(`WOKCommands > Could not send message due to no permissions in channel for ${guild.name}`);
             return;
         }
-        if (guild && !guild.me?.permissions.has('ADD_REACTIONS')) {
+        if (guild && !guild.members.me?.permissions.has(discord_js_1.PermissionsBitField.Flags.AddReactions)) {
             return instance.messageHandler.get(guild, 'NO_REACT_PERMS');
         }
         // Typical "!help" syntax for the menu
@@ -71,7 +71,7 @@ module.exports = {
             });
         }
         const description = _ReactionListener_1.default.getHelp(command, instance, guild);
-        const embed = new discord_js_1.MessageEmbed()
+        const embed = new discord_js_1.EmbedBuilder()
             .setTitle(`${instance.displayName} ${instance.messageHandler.getEmbed(guild, 'HELP_MENU', 'TITLE')} - ${arg}`)
             .setDescription(description);
         if (instance.color) {

@@ -14,8 +14,8 @@ class SlashCommands {
         this.setUp(listen, typeScript);
     }
     async setUp(listen, typeScript = false) {
-        // Do not pass in TS here because this should always compiled to JS
-        for (const [file, fileName] of get_all_files_1.default(path_1.default.join(__dirname, 'command-checks'))) {
+        // Do not pass in TS here because this should always be compiled to JS
+        for (const [file, fileName] of (0, get_all_files_1.default)(path_1.default.join(__dirname, 'command-checks'))) {
             this._commandChecks.set(fileName, require(file));
         }
         const replyFromCheck = async (reply, interaction) => {
@@ -65,9 +65,19 @@ class SlashCommands {
                     args.push(String(value));
                 });
                 for (const [checkName, checkFunction,] of this._commandChecks.entries()) {
-                    if (!(await checkFunction(guild, command, this._instance, member, user, (reply) => {
-                        return replyFromCheck(reply, interaction);
-                    }, args, commandName, channel))) {
+                    if (!(await checkFunction({
+                        guild,
+                        command,
+                        instance: this._instance,
+                        member,
+                        user,
+                        reply: (reply) => {
+                            return replyFromCheck(reply, interaction);
+                        },
+                        args,
+                        name: commandName,
+                        channel,
+                    }))) {
                         return;
                     }
                 }
@@ -127,12 +137,11 @@ class SlashCommands {
         }
         if (commands) {
             console.log(`WOKCommands > Creating${guildId ? ' guild' : ''} slash command "${name}"`);
-            const newCommand = await commands.create({
+            return await commands.create({
                 name,
                 description,
                 options,
             });
-            return newCommand;
         }
         return Promise.resolve(undefined);
     }

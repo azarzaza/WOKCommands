@@ -15,7 +15,8 @@ class Command {
     _description;
     _requiredPermissions;
     _requiredRoles = new Map(); // <GuildID, RoleIDs[]>
-    _callback = () => { };
+    _callback = () => {
+    };
     _error = null;
     _disabled = [];
     _cooldownDuration = 0;

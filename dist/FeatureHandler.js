@@ -15,8 +15,8 @@ class FeatureHandler {
         this.setup(dir, typeScript);
     }
     setup = async (dir, typeScript) => {
-        // Register built in features
-        for (const [file, fileName] of get_all_files_1.default(path_1.default.join(__dirname, 'features'), typeScript ? '.ts' : '')) {
+        // Register built-in features
+        for (const [file, fileName] of (0, get_all_files_1.default)(path_1.default.join(__dirname, 'features'), typeScript ? '.ts' : '')) {
             this.registerFeature(require(file), fileName);
         }
         if (!dir) {
@@ -25,7 +25,7 @@ class FeatureHandler {
         if (!fs_1.default.existsSync(dir)) {
             throw new Error(`Listeners directory "${dir}" doesn't exist!`);
         }
-        const files = get_all_files_1.default(dir, typeScript ? '.ts' : '');
+        const files = (0, get_all_files_1.default)(dir, typeScript ? '.ts' : '');
         const amount = files.length;
         if (amount > 0) {
             console.log(`WOKCommands > Loading ${amount} listener${amount === 1 ? '' : 's'}...`);
