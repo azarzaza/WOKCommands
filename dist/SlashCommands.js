@@ -2,6 +2,7 @@
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
+const discord_js_1 = require("discord.js");
 const path_1 = __importDefault(require("path"));
 const get_all_files_1 = __importDefault(require("./get-all-files"));
 class SlashCommands {
@@ -179,7 +180,7 @@ class SlashCommands {
                     content: reply,
                 });
             }
-            else if (typeof reply === 'object' && !(reply instanceof Promise)) {
+            else if (typeof reply === 'object' && !(reply instanceof discord_js_1.InteractionResponse)) {
                 if (reply.custom) {
                     interaction.reply(reply);
                 }

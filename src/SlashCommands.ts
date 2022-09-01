@@ -1,5 +1,6 @@
 import {
-    ApplicationCommand, ApplicationCommandOption,
+    ApplicationCommand,
+    ApplicationCommandOption,
     ApplicationCommandOptionData,
     ApplicationCommandOptionType,
     ChatInputCommandInteraction,
@@ -8,6 +9,7 @@ import {
     CommandInteractionOptionResolver,
     EmbedBuilder,
     GuildMember,
+    InteractionResponse,
 } from 'discord.js'
 import path from 'path'
 
@@ -272,7 +274,7 @@ class SlashCommands {
                 interaction.reply({
                     content: reply,
                 })
-            } else if (typeof reply === 'object' && !(reply instanceof Promise)) {
+            } else if (typeof reply === 'object' && !(reply instanceof InteractionResponse)) {
                 if (reply.custom) {
                     interaction.reply(reply)
                 } else {
