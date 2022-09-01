@@ -272,7 +272,7 @@ class SlashCommands {
                 interaction.reply({
                     content: reply,
                 })
-            } else if (typeof reply === 'object') {
+            } else if (typeof reply === 'object' && !(reply instanceof Promise)) {
                 if (reply.custom) {
                     interaction.reply(reply)
                 } else {
