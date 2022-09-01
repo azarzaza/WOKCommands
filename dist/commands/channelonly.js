@@ -63,7 +63,7 @@ module.exports = {
             channels = Array.from(message.mentions.channels.keys());
         }
         else {
-            channels = [interaction.options?.get('channel')];
+            channels = [interaction.options?.getChannel('channel')];
         }
         const results = await channel_commands_1.default.findOneAndUpdate({
             guildId: guild?.id,

@@ -1,7 +1,7 @@
 import {
-    ApplicationCommandOptionData,
+    ApplicationCommandOptionData, ChatInputCommandInteraction,
     Client,
-    CommandInteraction,
+    CommandInteractionOptionResolver,
     Guild,
     GuildMember,
     Message,
@@ -161,8 +161,8 @@ export interface ICallbackObject {
     client: Client
     prefix: string
     instance: WOKCommands
-    interaction: CommandInteraction
-    options: ApplicationCommandOptionData[]
+    interaction: ChatInputCommandInteraction
+    options: Omit<CommandInteractionOptionResolver, "getMessage" | "getFocused">
     user: User
     member: GuildMember
     guild: Guild | null

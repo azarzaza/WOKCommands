@@ -2,6 +2,7 @@ import {
     ApplicationCommand, ApplicationCommandOption,
     ApplicationCommandOptionData,
     ApplicationCommandOptionType,
+    ChatInputCommandInteraction,
     Client,
     CommandInteraction,
     CommandInteractionOptionResolver,
@@ -66,7 +67,7 @@ class SlashCommands {
 
         if (listen) {
             this._client.on('interactionCreate', async (interaction) => {
-                if (!interaction.isCommand()) {
+                if (!interaction.isChatInputCommand()) {
                     return
                 }
 
@@ -242,9 +243,9 @@ class SlashCommands {
     }
 
     public async invokeCommand(
-        interaction: CommandInteraction,
+        interaction: ChatInputCommandInteraction,
         commandName: string,
-        options: Omit<CommandInteractionOptionResolver, "getMessage" | "getFocused"> | Omit<CommandInteractionOptionResolver, "getFocused" | "getMentionable" | "getRole" | "getNumber" | "getInteger" | "getString" | "getChannel" | "getBoolean" | "getSubcommandGroup" | "getSubcommand">,
+        options: Omit<CommandInteractionOptionResolver, "getMessage" | "getFocused">,
         args: string[]
     ) {
         const command = this._instance.commandHandler.getCommand(commandName)

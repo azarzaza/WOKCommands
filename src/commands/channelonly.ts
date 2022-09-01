@@ -78,7 +78,7 @@ export = {
         if (message) {
             channels = Array.from(message.mentions.channels.keys())
         } else {
-            channels = [interaction.options?.get('channel')]
+            channels = [interaction.options?.getChannel('channel')]
         }
 
         const results = await channelCommandSchema.findOneAndUpdate(

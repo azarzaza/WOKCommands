@@ -46,7 +46,7 @@ class SlashCommands {
         };
         if (listen) {
             this._client.on('interactionCreate', async (interaction) => {
-                if (!interaction.isCommand()) {
+                if (!interaction.isChatInputCommand()) {
                     return;
                 }
                 const { user, commandName, options, guild, channelId } = interaction;
