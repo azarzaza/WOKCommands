@@ -6,8 +6,7 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc",
-    "lint": "eslint --ext .ts ./src",
-    "types": "dts-bundle --removeSource --name wokcommands --main ./dist --out ../typings/index.d.ts --baseDir ./dist"
+    "lint": "eslint --ext .ts src"
   },
   "keywords": [],
   "author": "Alexzander Flores, WornOffKeys.com",
@@ -19,17 +18,12 @@
   "repository": "karelkryda/WOKCommands",
   "bugs": "https://github.com/karelkryda/WOKCommands",
   "dependencies": {
-    "discord.js": "^14.3.0",
-    "dotenv": "^16.0.2",
-    "mongoose": "^6.5.4"
+    "discord.js": "^14.3.0"
   },
   "devDependencies": {
-    "@types/mongoose": "^5.11.96",
     "@types/node": "^18.7.14",
     "@typescript-eslint/eslint-plugin": "^5.36.1",
-    "dts-bundle-generator": "^6.12.0",
     "eslint": "^8.23.0",
-    "ts-node-dev": "^2.0.0",
     "typescript": "^4.8.2"
   },
   "engines": {

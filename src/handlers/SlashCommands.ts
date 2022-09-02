@@ -1,74 +1,46 @@
-import { join } from "path";
 import {
     ApplicationCommand,
     ApplicationCommandOption,
     ApplicationCommandOptionData,
-    ApplicationCommandOptionType,
     ChatInputCommandInteraction,
     Client,
-    CommandInteraction,
-    CommandInteractionOptionResolver,
-    EmbedBuilder,
-    GuildMember,
-    InteractionResponse,
+    CommandInteractionOptionResolver, GuildMember, TextChannel
 } from "discord.js";
-import WOKCommands from "../index";
-import { getAllFiles } from "../utils";
+import { WOKCommands } from "../index";
 
-class SlashCommands {
-    private readonly _client: Client;
-    private readonly _instance: WOKCommands;
-    private _commandChecks: Map<String, Function> = new Map();
+/**
+ * The class responsible for registering, editing and responding to slash commands.
+ */
+export class SlashCommands {
+    private readonly client: Client;
+    private readonly instance: WOKCommands;
+
+    //private commandChecks: Map<String, Function> = new Map();
 
     constructor(instance: WOKCommands, listen: boolean) {
-        this._instance = instance;
-        this._client = instance.client;
+        this.instance = instance;
+        this.client = instance.client;
 
-        this.setUp(listen).then();
+        this.checkAndSetup(listen).then();
     }
 
-    private async setUp(listen: boolean) {
-        //for (const [file, fileName] of getAllFiles(join(__dirname, "command-checks")))
-            //this._commandChecks.set(fileName, require(file));
-
-        const replyFromCheck = async (reply: string | EmbedBuilder | EmbedBuilder[], interaction: CommandInteraction) => {
-            if (!reply)
-                return new Promise((resolve) => {
-                    resolve("No reply provided.");
-                });
-
-            if (typeof reply === "string")
-                return interaction.reply({
-                    content: reply,
-                    ephemeral: this._instance.ephemeral,
-                });
-            else {
-                let embeds = [];
-                if (Array.isArray(reply))
-                    embeds = reply;
-                else
-                    embeds.push(reply);
-
-                return interaction.reply({
-                    embeds,
-                    ephemeral: this._instance.ephemeral,
-                });
-            }
-        };
-
-        if (listen)
-            this._client.on("interactionCreate", async (interaction) => {
+    /**
+     * Registers a listener for the `interactionCreate` event and invokes the corresponding callback method.
+     * @param listen - whether to listen to the `interactionCreate` event
+     * @private
+     */
+    private async checkAndSetup(listen: boolean): Promise<void> {
+        if (listen) {
+            this.client.on("interactionCreate", (interaction) => {
                 if (!interaction.isChatInputCommand())
                     return;
 
-                const { user, commandName, options, guild, channelId } = interaction;
-                const member = interaction.member as GuildMember;
-                const channel = guild?.channels.cache.get(channelId) || null;
-                const command = this._instance.commandHandler.getCommand(commandName);
+                const { commandName, options } = interaction;
+                const command = this.instance.commandHandler.getCommand(commandName);
                 if (!command)
                     return interaction.reply({
                         content: "This slash command is not properly registered.",
-                        ephemeral: this._instance.ephemeral,
+                        ephemeral: this.instance.ephemeral
                     }).then();
 
                 const args: string[] = [];
@@ -76,46 +48,83 @@ class SlashCommands {
                     args.push(String(value));
                 });
 
-                for (const [checkName, checkFunction,] of this._commandChecks.entries())
-                    if (!(await checkFunction({
-                        guild,
-                        command,
-                        instance: this._instance,
-                        member,
-                        user,
-                        reply: (reply: string | EmbedBuilder) => {
-                            return replyFromCheck(reply, interaction);
-                        },
-                        args,
-                        name: commandName,
-                        channel,
-                    })))
-                        return;
-
                 this.invokeCommand(interaction, commandName, options, args).then();
             });
-    }
-
-    public getCommands(guildId?: string) {
-        if (guildId)
-            return this._client.guilds.cache.get(guildId)?.commands;
-
-        return this._client.application?.commands;
-    }
-
-    public async get(guildId?: string): Promise<Map<any, any>> {
-        const commands = this.getCommands(guildId);
-        if (commands) {
-            //@ts-ignore
-            await commands.fetch();
-            return commands.cache;
         }
-
-        return new Map();
     }
 
+    /**
+     * Calls the callback method of the slash command.
+     * @param interaction - Discord interaction
+     * @param commandName - name of the called command
+     * @param options - command options
+     * @param args - command arguments
+     * @private
+     */
+    private async invokeCommand(interaction: ChatInputCommandInteraction, commandName: string, options: Omit<CommandInteractionOptionResolver, "getMessage" | "getFocused">, args: string[]): Promise<void> {
+        const command = this.instance.commandHandler.getCommand(commandName);
+        if (!command || !command.callback)
+            return;
+
+        await command.callback({
+            member: interaction.member as GuildMember,
+            guild: interaction.guild,
+            channel: interaction.channel as TextChannel,
+            args,
+            text: args.join(" "),
+            client: this.client,
+            instance: this.instance,
+            interaction,
+            options,
+            user: interaction.user,
+        });
+    }
+
+    /**
+     * Creates (or modifies) a slash command.
+     * @param name - command name
+     * @param description - command description
+     * @param options - command options
+     * @param guildId - Discord server ID
+     */
+    public async create(name: string, description: string, options: ApplicationCommandOptionData[], guildId?: string): Promise<ApplicationCommand | undefined> {
+        let commands;
+        if (guildId)
+            commands = this.client.guilds.cache.get(guildId)?.commands;
+        else
+            commands = this.client.application?.commands;
+
+        if (!commands)
+            return;
+
+        await commands.fetch({});
+
+        const cmd = commands.cache.find((cmd) => cmd.name === name) as ApplicationCommand;
+        if (cmd) {
+            const optionsChanged = this.didOptionsChange(cmd, options);
+            if (cmd.description !== description || cmd.options.length !== options.length || optionsChanged) {
+                console.log(`WOKCommands > Updating${guildId ? " guild" : ""} slash command "${name}"`);
+
+                return commands?.edit(cmd.id, { name, description, options });
+            }
+
+            return cmd;
+        }
+        if (commands) {
+            console.log(`WOKCommands > Creating${guildId ? " guild" : ""} slash command "${name}"`);
+
+            return await commands.create({ name, description, options });
+        }
+    }
+
+    /**
+     * Checks if the options of the given slash command have changed.
+     * @param command - existing command
+     * @param options - new command options
+     * @private
+     */
     private didOptionsChange(command: ApplicationCommand, options: (ApplicationCommandOptionData & { required?: boolean })[]): boolean {
-        return (command.options?.filter((opt: ApplicationCommandOption & { nameLocalized?: string | undefined, descriptionLocalized?: string | undefined, required?: boolean, options?: any }, index) => {
+        return (command.options?.filter((opt: ApplicationCommandOption & { nameLocalized?: string | undefined, descriptionLocalized?: string | undefined, required?: boolean, options?: ApplicationCommandOptionData[] }, index) => {
             return (
                 opt?.required !== options[index]?.required &&
                 opt?.name !== options[index]?.name &&
@@ -123,117 +132,4 @@ class SlashCommands {
             );
         }).length !== 0);
     }
-
-    public async create(name: string, description: string, options: ApplicationCommandOptionData[], guildId?: string): Promise<ApplicationCommand | undefined> {
-        let commands;
-        if (guildId)
-            commands = this._client.guilds.cache.get(guildId)?.commands;
-        else
-            commands = this._client.application?.commands;
-
-        if (!commands)
-            return;
-
-        // @ts-ignore
-        await commands.fetch();
-
-        const cmd = commands.cache.find((cmd) => cmd.name === name) as ApplicationCommand;
-        if (cmd) {
-            const optionsChanged = this.didOptionsChange(cmd, options);
-            if (
-                cmd.description !== description ||
-                cmd.options.length !== options.length ||
-                optionsChanged
-            ) {
-                console.log(
-                    `WOKCommands > Updating${
-                        guildId ? " guild" : ""
-                    } slash command "${name}"`
-                );
-
-                return commands?.edit(cmd.id, {
-                    name,
-                    description,
-                    options,
-                });
-            }
-
-            return Promise.resolve(cmd);
-        }
-
-        if (commands) {
-            console.log(
-                `WOKCommands > Creating${
-                    guildId ? " guild" : ""
-                } slash command "${name}"`
-            );
-
-            return await commands.create({
-                name,
-                description,
-                options,
-            });
-        }
-
-        return Promise.resolve(undefined);
-    }
-
-    public async delete(commandId: string, guildId?: string): Promise<ApplicationCommand | undefined> {
-        const commands = this.getCommands(guildId);
-        if (commands) {
-            const cmd = commands.cache.get(commandId);
-            if (cmd) {
-                console.log(
-                    `WOKCommands > Deleting${guildId ? " guild" : ""} slash command "${
-                        cmd.name
-                    }"`
-                );
-
-                cmd.delete().then();
-            }
-        }
-
-        return Promise.resolve(undefined);
-    }
-
-    public async invokeCommand(interaction: ChatInputCommandInteraction, commandName: string, options: Omit<CommandInteractionOptionResolver, "getMessage" | "getFocused">, args: string[]) {
-        const command = this._instance.commandHandler.getCommand(commandName);
-        if (!command || !command.callback)
-            return;
-
-        const reply = await command.callback({
-            member: interaction.member,
-            guild: interaction.guild,
-            channel: interaction.channel,
-            args,
-            text: args.join(" "),
-            client: this._client,
-            instance: this._instance,
-            interaction,
-            options,
-            user: interaction.user,
-        });
-        if (reply && !(reply instanceof InteractionResponse)) {
-            if (typeof reply === "string")
-                interaction.reply({
-                    content: reply,
-                }).then();
-            else if (typeof reply === "object")
-                if (reply.custom)
-                    interaction.reply(reply).then();
-                else {
-                    let embeds = [];
-                    if (Array.isArray(reply))
-                        embeds = reply;
-                    else
-                        embeds.push(reply);
-
-                    interaction.reply({ embeds }).then();
-                }
-        }
-    }
 }
-
-export {
-    SlashCommands
-};

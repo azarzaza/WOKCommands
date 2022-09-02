@@ -1,29 +1,27 @@
 import {
     ApplicationCommandOptionData,
+    ChatInputCommandInteraction,
     Client,
-    CommandInteraction, Guild,
+    CommandInteractionOptionResolver,
+    Guild,
     GuildMember,
     Message,
     TextChannel,
     User
 } from "discord.js";
-import WOKCommands from "../index";
+import { WOKCommands } from "../index";
 
 interface ICallbackObject {
+    member: GuildMember;
+    guild: Guild | null;
     channel: TextChannel;
-    message: Message;
     args: string[];
     text: string;
     client: Client;
-    prefix: string;
     instance: WOKCommands;
-    interaction: CommandInteraction;
-    options: ApplicationCommandOptionData[];
+    interaction: ChatInputCommandInteraction;
+    options: Omit<CommandInteractionOptionResolver, "getMessage" | "getFocused">;
     user: User;
-    member: GuildMember;
-    guild: Guild | null;
-
-    cancelCoolDown(): any;
 }
 
 interface IErrorObject {
@@ -34,21 +32,20 @@ interface IErrorObject {
 
 interface ICommand {
     names?: string[] | string;
-    aliases?: string[] | string;
     category: string;
     description: string;
-
-    callback?(obj: ICallbackObject): any;
-
-    error?(obj: IErrorObject): any;
-
+    ownerOnly?: boolean;
     guildOnly?: boolean;
     testOnly?: boolean;
-    slash?: boolean | "both";
+    slash?: boolean;
     options?: ApplicationCommandOptionData[];
+
+    callback?(obj: ICallbackObject): void;
+
+    error?(obj: IErrorObject): void;
 }
 
-interface Commands {
+interface Options {
     commandsDir: string;
     showWarns?: boolean;
     ignoreBots?: boolean;
@@ -56,9 +53,12 @@ interface Commands {
     botOwners?: string | string[];
     ephemeral?: boolean;
     debug?: boolean;
+    typescript?: boolean;
 }
 
 export {
+    ICallbackObject,
+    IErrorObject,
     ICommand,
-    Commands
+    Options
 };

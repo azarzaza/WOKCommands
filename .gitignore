@@ -104,7 +104,4 @@ dist
 .tern-port
 
 # Dev folder
-src-old/
-unused/
 test/
-examples/

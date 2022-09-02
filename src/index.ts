@@ -1,122 +1,90 @@
-import { Client } from "discord.js";
 import { EventEmitter } from "events";
-import { CommandHandler, SlashCommands, } from "./handlers";
-import { Commands } from "./interfaces";
+import { Client } from "discord.js";
+import { ICommand, Options } from "./interfaces";
+import { CommandHandler, SlashCommands } from "./handlers";
 
-export default class WOKCommands extends EventEmitter {
+export class WOKCommands extends EventEmitter {
     private readonly _client: Client;
-    private _commandsDir = "commands";
-    private _commandHandler: CommandHandler | null = null;
-    private _showWarns = true;
-    private _ignoreBots = true;
-    private _botOwner: string[] = [];
-    private _testServers: string[] = [];
-    private _ephemeral = true;
-    private _debug = false;
-    private _slashCommand: SlashCommands | null = null;
+    private _commandsDir?: string;
+    private _showWarns?: boolean;
+    private _ignoreBots?: boolean;
+    private _ephemeral?: boolean;
+    private _debug?: boolean;
+    private _testServers?: string[];
+    private _botOwners?: string[];
+    private typescript?: boolean;
 
-    constructor(client: Client, options?: Commands) {
+    private _commandHandler?: CommandHandler;
+    private _slashCommands?: SlashCommands;
+
+    constructor(client: Client, options?: Options) {
         super();
 
         this._client = client;
-        this.setUp(client, options).then();
+        this.checkAndSetup(client, options).then();
     }
 
-    private async setUp(client: Client, options?: Commands) {
+    private async checkAndSetup(client: Client, options?: Options) {
         if (!client)
             throw new Error("No Discord JS Client provided as first argument!");
 
-        let {
-            commandsDir = "",
-            showWarns = true,
-            ignoreBots = true,
+        const {
+            commandsDir,
+            showWarns,
+            ignoreBots,
             testServers,
             botOwners,
-            ephemeral = true,
-            debug = false,
+            ephemeral,
+            debug,
+            typescript
         } = options || {};
 
-        this._commandsDir = commandsDir || this._commandsDir;
-        this._ephemeral = ephemeral;
-        this._debug = debug;
-
-        if (this._commandsDir && !(this._commandsDir.includes("/") || this._commandsDir.includes("\\")))
-            throw new Error(
-                "WOKCommands > The 'commands' directory must be an absolute path. This can be done by using the 'path' module. More info: https://docs.wornoffkeys.com/setup-and-options-object"
-            );
-
-        if (testServers) {
-            if (typeof testServers === "string")
-                testServers = [testServers];
-
-            this._testServers = testServers;
-        }
-
-        if (botOwners) {
-            if (typeof botOwners === "string")
-                botOwners = [botOwners];
-
-            this._botOwner = botOwners;
-        }
-
+        this._commandsDir = commandsDir;
         this._showWarns = showWarns;
         this._ignoreBots = ignoreBots;
+        this._ephemeral = ephemeral;
+        this._debug = debug;
+        this.typescript = typescript;
 
-        this._commandHandler = new CommandHandler(this, client, this._commandsDir);
-        this._slashCommand = new SlashCommands(this, true);
+        if (this._commandsDir && !(this._commandsDir.includes("/") || this._commandsDir.includes("\\")))
+            throw new Error("WOKCommands > The 'commands' directory must be an absolute path. This can be done by using the 'path' module. More info: https://docs.wornoffkeys.com/setup-and-options-object");
+
+        if (testServers)
+            this._testServers = (typeof testServers === "string") ? [testServers] : testServers;
+        if (botOwners)
+            this._botOwners = (typeof botOwners === "string") ? [botOwners] : botOwners;
+
+        this._commandHandler = new CommandHandler(this, client, this._commandsDir || "", this.typescript);
+        this._slashCommands = new SlashCommands(this, true);
 
         console.log("WOKCommands > Your bot is now running.");
     }
 
-    public get client(): Client {
+    get client(): Client {
         return this._client;
     }
 
-    public get commandHandler(): CommandHandler {
-        return this._commandHandler!;
+    get showWarns(): boolean {
+        return this._showWarns || false;
     }
 
-    public get showWarns(): boolean {
-        return this._showWarns;
+    get ephemeral(): boolean {
+        return this._ephemeral || false;
     }
 
-    public get ignoreBots(): boolean {
-        return this._ignoreBots;
+    get testServers(): string[] {
+        return this._testServers || [];
     }
 
-    public get botOwner(): string[] {
-        return this._botOwner;
+    get commandHandler(): CommandHandler {
+        return this._commandHandler || new CommandHandler(this, this._client, this._commandsDir || "", this.typescript);
     }
 
-    public setBotOwner(botOwner: string | string[]): WOKCommands {
-        console.log(
-            "WOKCommands > setBotOwner() is deprecated. Please specify your bot owners in the object constructor instead. See https://docs.wornoffkeys.com/setup-and-options-object"
-        );
-
-        if (typeof botOwner === "string")
-            botOwner = [botOwner];
-        this._botOwner = botOwner;
-
-        return this;
-    }
-
-    public get testServers(): string[] {
-        return this._testServers;
-    }
-
-    public get ephemeral(): boolean {
-        return this._ephemeral;
-    }
-
-    public get debug(): boolean {
-        return this._debug;
-    }
-
-    public get slashCommands(): SlashCommands {
-        return this._slashCommand!;
+    get slashCommands(): SlashCommands {
+        return this._slashCommands || new SlashCommands(this, true);
     }
 }
 
 export {
-    WOKCommands
+    ICommand
 };
