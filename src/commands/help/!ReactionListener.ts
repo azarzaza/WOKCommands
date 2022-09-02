@@ -10,7 +10,7 @@ import {
     User,
 } from 'discord.js'
 import WOKCommands from '../..'
-import { ICommand } from '../../../typings'
+import { ICommand } from '../../../unused/typings'
 import getFirstEmbed from './!get-first-embed'
 
 const /**

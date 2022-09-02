@@ -1,6 +1,6 @@
 import { Message } from 'discord.js'
 
-import { ICommandCheck } from '../../typings'
+import { ICommandCheck } from '../../unused/typings'
 
 export = (commandCheck: ICommandCheck) => {
     const {guild, command, instance, reply} = commandCheck

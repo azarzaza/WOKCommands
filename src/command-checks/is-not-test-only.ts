@@ -1,4 +1,4 @@
-import { ICommandCheck } from '../../typings'
+import { ICommandCheck } from '../../unused/typings'
 
 export = async (commandCheck: ICommandCheck) => {
     const {guild, command, instance} = commandCheck

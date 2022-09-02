@@ -1,6 +1,6 @@
 import { Client, EmbedBuilder, Message, PermissionsBitField } from 'discord.js'
 import WOKCommands from '../..'
-import { ICallbackObject, ICommand } from '../../../typings'
+import { ICallbackObject, ICommand } from '../../../unused/typings'
 import getFirstEmbed from './!get-first-embed'
 import ReactionListener, { addReactions } from './!ReactionListener'
 

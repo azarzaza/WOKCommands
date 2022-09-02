@@ -10,7 +10,7 @@ import requiredRoles from './models/required-roles'
 import cooldown from './models/cooldown'
 import channelCommands from './models/channel-commands'
 import { permissionList } from './permissions'
-import { ICommand } from '../typings'
+import { ICommand } from '../unused/typings'
 import CommandErrors from './enums/CommandErrors'
 import Events from './enums/Events'
 

@@ -1,6 +1,6 @@
 import { Message } from 'discord.js'
 
-import { ICommandCheck } from '../../typings'
+import { ICommandCheck } from '../../unused/typings'
 import CommandErrors from '../enums/CommandErrors'
 
 export = (commandCheck: ICommandCheck) => {

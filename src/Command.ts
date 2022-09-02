@@ -3,7 +3,7 @@ import WOKCommands from '.'
 
 import permissions from './permissions'
 import cooldownSchema from './models/cooldown'
-import { ICommand } from '../typings'
+import { ICommand } from '../unused/typings'
 
 class Command {
     private instance: WOKCommands
