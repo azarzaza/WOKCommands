@@ -236,7 +236,7 @@ class CommandHandler {
                         description: item,
                         type: expectedArgsTypes && expectedArgsTypes.length >= a
                             ? expectedArgsTypes[a]
-                            : 'STRING',
+                            : 3,
                         required: a < minArgs,
                     });
                 }
